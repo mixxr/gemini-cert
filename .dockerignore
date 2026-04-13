@@ -1,0 +1,31 @@
+# Build artifacts
+target/
+
+# test files
+config_files/
+input_files/
+output_files/
+
+# Git
+.git/
+.gitignore
+
+# Environment (secrets)
+.env
+.env.local
+.devcontainer/
+
+# IDE / OS
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Documentation
+README.md
+CLAUDE.md
+benchmarks/
+.claude/
+notes/
+run.sh
