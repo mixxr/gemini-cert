@@ -1,0 +1,8 @@
+**/target
+/data/output
+*.log
+*test.json
+**\\target
+*.old
+testdata
+*.local
