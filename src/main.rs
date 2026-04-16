@@ -1,6 +1,6 @@
 use google_ai_rs::{Client, AsSchema};
 //use google_ai_rs::Tool;
-use serde::*;
+//use serde::*;
 use std::fs::File;
 use std::io::Write;
 use std::io::{BufRead, BufReader};
@@ -11,7 +11,7 @@ use tokio::time::{sleep, Duration};
 use clap::Parser;
 mod definitions;
 use definitions::args::Args;
-use definitions::resp_types::{CertificateResponse, CertificateTickersResponse};
+use definitions::resp_types::*;
 
 #[derive(Debug)]
 struct ModelQuota {
@@ -44,22 +44,22 @@ fn read_quotas_simple(path: &str) -> Vec<ModelQuota> {
     quotas
 }
 
-async fn create_model_response(
+async fn create_model_response<T>(
     client: &Client,
     model_list: &[ModelQuota],
     mut model_position: usize,
     isin: &str,
-    content: &str,
+    prompt: &str,
     retries: usize,
-) -> Result<(CertificateTickersResponse, f32), Box<dyn std::error::Error>> {
-    let mut model = client.typed_model::<CertificateTickersResponse>(&model_list[model_position].model_name);
+) -> Result<(T, f32), Box<dyn std::error::Error>>
+where
+    T: AsSchema + serde::de::DeserializeOwned + std::fmt::Debug + std::marker::Send,
+{
+    let mut model = client.typed_model::<T>(&model_list[model_position].model_name);
     let mut rpm = model_list[model_position].rpm;
     let mut attempts = 0;
 
     loop {
-        let prompt = format!(
-            "what are the underlying stocks under the certificate {isin} based on {content}?"
-        );
         log::debug!("Prompt: {prompt}");
 
         match model.generate_content(prompt).await {
@@ -80,7 +80,7 @@ async fn create_model_response(
                 if model_list.len() > 1 && is_rate_limited {
                     model_position = (model_position + 1) % model_list.len();
                     log::info!("Rate limit hit. Switching to model: {}", &model_list[model_position].model_name);
-                    model = client.typed_model::<CertificateTickersResponse>(&model_list[model_position].model_name);
+                    model = client.typed_model::<T>(&model_list[model_position].model_name);
                     rpm = model_list[model_position].rpm;
                 }
             }
@@ -98,10 +98,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // check if args.isin_path is default <ISIN>.md then replace <ISIN> with the actual ISIN value
     let content_filepath = &args.isin_path.replace("<ISIN>", &args.isin.to_ascii_uppercase());
-    log::debug!("Content file path: {}", content_filepath);
-    
-    let content = std::fs::read_to_string(&content_filepath)
-        .map_err(|_| "Please provide a valid text file containing the certificate description")?;
+    let content = std::fs::read_to_string(&content_filepath)?;
+    //     .map_err(|_| "Please provide a valid text file containing the certificate description")?;
+    // let bytes = std::fs::read(&content_filepath)?;
+    // let content2 = String::from_utf8_lossy(&bytes);
 
     let model_list: Vec<ModelQuota> = match args.model_list_path {
         Some(path) => {
@@ -126,20 +126,32 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     let model_position = args.model_pos;
     let isin = &args.isin.to_ascii_uppercase();
+    let prompt = match args.resp_type.as_str() {
+        "tickers" => format!(
+            "what are the underlying stocks under the certificate {isin} based on {content}? please do not consider other information such as certificate details!"
+        ),
+        "certificate" => format!(
+            "what is the information about the certificate {isin} based on {content}? Please do not consider underlying stocks information!"
+        ),
+        "issuer" => format!(
+            "what is the information about the issuer of the certificate {isin} based on {content}? Please do not consider underlying stocks information nor certificate details!"
+        ),
+        _ => format!(
+            "what is the information about the certificate {isin} based on {content}? Please add underlying stocks information as well!"
+        ),
+    };
 
-    let (response, rpm) = create_model_response(
+    let (response, rpm) = create_model_response::<CertificateTickersResponse>(
         &client,
         &model_list,
         model_position,
         &isin,
-        &content,
+        &prompt,
         args.retries,
-    )
-    .await?;
+    ).await?;
       
     log::debug!("Response: {:?}", response);
 
-    // create a json file to store single certificate response
     let file_name = format!("{}.json", isin);
     let full_path = std::path::Path::new(output_dir).join(file_name);
 
@@ -148,18 +160,37 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     std::fs::write(&full_path, &json_string)?;
     log::debug!("File saved to: {:?}", full_path);
 
+    if let Some(details) = &response.details {
+        let file_name = format!("{}-details.json", isin);
+        let full_path = std::path::Path::new(output_dir).join(file_name);
+
+        // Serialize and write
+        let json_string = serde_json::to_string_pretty(details)?;
+        std::fs::write(&full_path, &json_string)?;
+        log::debug!("Details information saved to: {:?}", full_path);
+    }
+    if let Some(issuer) = &response.issuer {
+        let file_name = format!("{}-issuer.json", isin);
+        let full_path = std::path::Path::new(output_dir).join(file_name);
+
+        // Serialize and write
+        let json_string = serde_json::to_string_pretty(issuer)?;
+        std::fs::write(&full_path, &json_string)?;
+        log::debug!("Issuer information saved to: {:?}", full_path);
+    }
+
     // create a ndjson file to store underlyings if required
-    if args.output_format == "ndjson" {
+    if let Some(stocks) = &response.underlyings && args.output_format == "ndjson" {
         let ndj_file_name = format!("{}-tickers.json", isin);
         let ndj_full_path = std::path::Path::new(output_dir).join(ndj_file_name);
-        let mut file = File::create(&ndj_full_path)?;
-        for stock in &response.underlyings {
-            log::debug!("Writing json to {:?}...", &ndj_full_path);
-            // ndJSON is 1 file containing multiple JSON objects, each in a new line
-            serde_json::to_writer(&mut file, &stock).unwrap();
-            // add a new line after each JSON object
-            file.write_all(b"\n").unwrap();
-        }
+        let mut file = File::create(&ndj_full_path)?;   
+            for stock in stocks {
+                log::debug!("Writing json to {:?}...", &ndj_full_path);
+                // ndJSON is 1 file containing multiple JSON objects, each in a new line
+                serde_json::to_writer(&mut file, &stock).unwrap();
+                // add a new line after each JSON object
+                file.write_all(b"\n").unwrap();
+            }
     }
     log::info!("{}, OK", isin);
 

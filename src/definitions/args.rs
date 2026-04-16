@@ -7,8 +7,8 @@ pub struct Args {
     #[arg(short = 'n', long)]
     pub isin: String,
 
-    /// Response type [certificate|tickers] 
-    #[arg(short = 't', long, default_value = "certificate", value_parser = ["certificate", "tickers"])]
+    /// Response type [certificate|tickers|issuer|all] 
+    #[arg(short = 't', long, default_value = "certificate", value_parser = ["certificate", "tickers", "issuer", "all"])]
     pub resp_type: String,
 
     /// Content file path 
