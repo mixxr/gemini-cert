@@ -3,34 +3,15 @@ use google_ai_rs::{Client, AsSchema};
 use serde::*;
 use std::fs::File;
 use std::io::Write;
-use rand::Rng;
+use std::io::{BufRead, BufReader};
 use tokio::time::{sleep, Duration};
 // use gcp_bigquery_client::Client as BQClient;
 // use gcp_bigquery_client::model::table_data_insert_all_request::TableDataInsertAllRequest;
 
-mod definitions;
 use clap::Parser;
+mod definitions;
 use definitions::args::Args;
-use std::io::{BufRead, BufReader};
-
-#[derive(Serialize, Deserialize, AsSchema, Debug)]
-struct StockInfo {
-    certificate_isin: String,
-    stock_name: String,
-    stock_google_finance_ticker: String,
-    stock_isin: String,
-    stock_exchange: String,
-    stock_sector: String,
-    stock_industry: String,
-    stock_tags: String,
-}
-
-#[derive(Serialize, Deserialize, AsSchema, Debug)]
-struct CertificateResponse {
-    certificate_isin: String,
-    certificate_issuer: String,
-    underlyings: Vec<StockInfo>,
-}
+use definitions::resp_types::{CertificateResponse, CertificateTickersResponse};
 
 #[derive(Debug)]
 struct ModelQuota {
@@ -63,6 +44,50 @@ fn read_quotas_simple(path: &str) -> Vec<ModelQuota> {
     quotas
 }
 
+async fn create_model_response(
+    client: &Client,
+    model_list: &[ModelQuota],
+    mut model_position: usize,
+    isin: &str,
+    content: &str,
+    retries: usize,
+) -> Result<(CertificateTickersResponse, f32), Box<dyn std::error::Error>> {
+    let mut model = client.typed_model::<CertificateTickersResponse>(&model_list[model_position].model_name);
+    let mut rpm = model_list[model_position].rpm;
+    let mut attempts = 0;
+
+    loop {
+        let prompt = format!(
+            "what are the underlying stocks under the certificate {isin} based on {content}?"
+        );
+        log::debug!("Prompt: {prompt}");
+
+        match model.generate_content(prompt).await {
+            Ok(res) => return Ok((res, rpm)),
+            Err(e) => {
+                attempts += 1;
+                if attempts > retries {
+                    log::error!("Final failure for ISIN {}: {}", isin, e);
+                    return Err(e.into());
+                }
+
+                let wait_time = attempts as u64 * 5;
+                log::warn!("Error fetching {}: {:.100}. Retry {}/{} in {}s...", isin, &e, attempts, retries, wait_time);
+                sleep(Duration::from_secs(wait_time)).await;
+
+                let error_msg = e.to_string();
+                let is_rate_limited = error_msg.contains("ResourceExhausted") || error_msg.contains("429");
+                if model_list.len() > 1 && is_rate_limited {
+                    model_position = (model_position + 1) % model_list.len();
+                    log::info!("Rate limit hit. Switching to model: {}", &model_list[model_position].model_name);
+                    model = client.typed_model::<CertificateTickersResponse>(&model_list[model_position].model_name);
+                    rpm = model_list[model_position].rpm;
+                }
+            }
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
@@ -70,8 +95,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::init();
 
     println!("Configuration: {:?}, Log Level: {}", args, std::env::var("RUST_LOG").unwrap_or("ERROR".to_string()));
+
+    // check if args.isin_path is default <ISIN>.md then replace <ISIN> with the actual ISIN value
+    let content_filepath = &args.isin_path.replace("<ISIN>", &args.isin.to_ascii_uppercase());
+    log::debug!("Content file path: {}", content_filepath);
     
-    let content = std::fs::read_to_string(&args.isin_path)
+    let content = std::fs::read_to_string(&content_filepath)
         .map_err(|_| "Please provide a valid text file containing the certificate description")?;
 
     let model_list: Vec<ModelQuota> = match args.model_list_path {
@@ -95,63 +124,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let g_api_key = std::env::var("G_API_KEY").map_err(|_| "Configuration error, please contact service administrator.".to_string())?;
     let client = Client::new(g_api_key).await?;
     
-    let mut model_position = args.model_pos;
-    log::info!("Using model: {}", &model_list[model_position].model_name);
-    // let search_tool = Tool {
-    //     google_search: Some(Default::default()),
-    //     ..Default::default()
-    // };
-    let mut model = client
-        .typed_model::<CertificateResponse>(&model_list[model_position].model_name);
-        // .tools(vec![search_tool]);
+    let model_position = args.model_pos;
+    let isin = &args.isin.to_ascii_uppercase();
 
-    let mut rpm = &model_list[model_position].rpm;
-    let mut ave_wait = 60.0/rpm + 0.5;
-
-    log::debug!("Processing ISIN: {}", &args.isin);
-
-    // let response = model
-    //     .generate_content(prompt)
-    //     .await?;
-
-
-    let mut attempts = 0;
-    let isin = &args.isin;
-    let response: CertificateResponse = loop {
-        let prompt = format!(
-            "what are the underlying stocks under the certificate {isin} based on {content}?"
-        );
-        log::debug!("Prompt: {prompt}");
-        match model.generate_content(prompt).await {
-            Ok(res) => break res, // Success! Exit the retry loop
-            Err(e) => {
-                attempts += 1;
-                if attempts > args.retries {
-                    log::error!("Final failure for ISIN {}: {}", isin, e);
-                    return Err(e.into()); // Exit the program
-                }
-                
-                let wait_time = attempts as u64 * 5; // Exponential-ish backoff
-                log::warn!("Error fetching {}: {:.100}. Retry {}/{} in {}s...", isin, &e, attempts, args.retries, wait_time);
-                sleep(Duration::from_secs(wait_time)).await;
-
-                let error_msg = e.to_string();
-                let is_rate_limited = error_msg.contains("ResourceExhausted") || error_msg.contains("429");
-                if model_list.len() > 1 && is_rate_limited {
-                    model_position = (model_position + 1) % model_list.len();
-                    log::info!("Rate limit hit. Switching to model: {}", &model_list[model_position].model_name);
-                    model = client
-                        .typed_model::<CertificateResponse>(&model_list[model_position].model_name);
-                        //.tools(vec![search_tool]);
-                    rpm = &model_list[model_position].rpm;
-                    ave_wait = 60.0/rpm + 0.5;
-
-                }
-            }
-        }
-    };
-
-    log::debug!("Certificate: {:?}", response);
+    let (response, rpm) = create_model_response(
+        &client,
+        &model_list,
+        model_position,
+        &isin,
+        &content,
+        args.retries,
+    )
+    .await?;
+      
+    log::debug!("Response: {:?}", response);
 
     // create a json file to store single certificate response
     let file_name = format!("{}.json", isin);
@@ -175,13 +161,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             file.write_all(b"\n").unwrap();
         }
     }
-    log::info!("{}, OK", isin.to_ascii_uppercase());
+    log::info!("{}, OK", isin);
 
     if args.wait {
-        let jitter = rand::thread_rng().gen_range(0.0..2.0);
-        let delay_secs = (ave_wait + jitter) as u64;
-        log::debug!("Waiting {} seconds before next request...", delay_secs);
-        sleep(Duration::from_secs(delay_secs)).await;
+        let ave_wait = 60.0 / rpm + 0.5;  
+        log::debug!("Waiting {} seconds before next request...", ave_wait);
+        sleep(Duration::from_secs(ave_wait as u64)).await;
     }
 
     Ok(())

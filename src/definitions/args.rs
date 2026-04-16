@@ -1,14 +1,18 @@
 use clap::*;
 
 #[derive(Parser, Debug)]
-#[command(version, about = "Digital Posture Gemini Certificate Get Tickers", long_about = None)]
+#[command(version, about = "Digital Posture Gemini Certificate Get Tickers", long_about = "It retrieves stock information related to a given ISIN using Gemini API and saves the response in the specified format.")]
 pub struct Args {
     /// ISIN value 
     #[arg(short = 'n', long)]
     pub isin: String,
 
-    /// ISIN content file path 
-    #[arg(short = 'i', long)]
+    /// Response type [certificate|tickers] 
+    #[arg(short = 't', long, default_value = "certificate", value_parser = ["certificate", "tickers"])]
+    pub resp_type: String,
+
+    /// Content file path 
+    #[arg(short = 'i', long="content-filepath", default_value = "<ISIN>.md")]
     pub isin_path: String,
 
     /// Output file format [json|ndjson|csv] 
