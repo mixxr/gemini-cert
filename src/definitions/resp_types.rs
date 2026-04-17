@@ -10,7 +10,11 @@ pub struct StockInfo {
     stock_exchange: String,
     stock_sector: String,
     stock_industry: String,
-    stock_tags: String,
+    stock_specializations: String, // e.g. AI, Quantum, Defense Drone, Defense communication, Satellite, Crypto, etc.
+    stock_capitalization: String, // e.g. micro, small, mid, large, mega
+    stock_pe: String, // e.g. P/E ratio value or N/A if not applicable
+    stock_beta: String, // e.g. beta value or N/A if not applicable
+    stock_volatility: String, // e.g. low, medium, high, etc.
 }
 
 #[derive(Serialize, Deserialize, AsSchema, Debug)]
@@ -25,22 +29,26 @@ pub struct CertificateTickersResponse {
 pub struct CertificateDetails {
     isin: String,
     issuer: String,
-    name: String,
-    type_tags: String,
+    name: String, // the name of the certificate, try to add the underlying stock tickers to the name if possible
+    certificate_type_tags: String, // e.g. step-down, memory, cash collect, booster, etc.
+    memory_effect: String, // yes, no, etc.
     phase: String, // rembursed, active, etc.
-    sector: String,
-    industry: String,   
-    stock_exchange: String,
     currency: String,
-    issue_date: String,
-    rembursement_date: String,
-    callable: String,
-    maturity_date: String,
+    industry: String,  // try to infer the industry of the certificate based on the underlying stocks' industries
+    callable: String, // yes, no, autocallable,
+    strike_date: String, // format YYYY-MM-DD
+    issue_date: String, // format YYYY-MM-DD
+    rembursement_date: String, // format YYYY-MM-DD
+    autocallable_date: String, // format YYYY-MM-DD
+    capital_barrier: String, // e.g. 100% of the strike price, 50% of the underlying stock price, etc.
+    airbag: String, // yes, no, etc.
+    risk_level: String, // low, medium, high, etc.
     coupon_amount: String,
     coupon_recurrence: String,
+    coupon_type: String, // fixed, variable, etc.
+    coupon_barrier: String, // e.g. 100% of the strike price, 50% of the underlying stock price, etc.
     leverage: String,
     exchange_risk: String,
-    capital_protection: String,
 }
 
 #[derive(Serialize, Deserialize, AsSchema, Debug)]

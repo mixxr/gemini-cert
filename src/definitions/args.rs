@@ -7,6 +7,10 @@ pub struct Args {
     #[arg(short = 'n', long)]
     pub isin: String,
 
+    /// Language of the response (e.g. English, Italian, etc.)
+    #[arg(short = 'g', long, default_value = "English", value_parser = ["English", "Italian", "German", "French", "Spanish"])]
+    pub language: String,
+
     /// Response type [details-only|tickers-only|issuer-only|all] 
     #[arg(short = 't', long, default_value = "details-only", value_parser = ["details-only", "tickers-only", "issuer-only", "all"])]
     pub resp_type: String,

@@ -5,6 +5,8 @@ target/
 config_files/
 input_files/
 output_files/
+test_in/
+test_out/
 
 # Git
 .git/

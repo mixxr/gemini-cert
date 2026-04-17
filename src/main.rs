@@ -58,10 +58,10 @@ where
     let mut model = client.typed_model::<T>(&model_list[model_position].model_name);
     let mut rpm = model_list[model_position].rpm;
     let mut attempts = 0;
+    log::debug!("Prompt: {prompt}");
+    log::info!("Using model: {}", &model_list[model_position].model_name);
 
     loop {
-        log::debug!("Prompt: {prompt}");
-
         match model.generate_content(prompt).await {
             Ok(res) => return Ok((res, rpm)),
             Err(e) => {
@@ -126,18 +126,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     let model_position = args.model_pos;
     let isin = &args.isin.to_ascii_uppercase();
+    let language = &args.language;
     let prompt = match args.resp_type.as_str() {
         "tickers-only" => format!(
-            "what are the underlying stocks under the certificate {isin} based on {content}? please do not consider other information such as certificate details!"
+            "The response should be in {language}: what are the underlying stocks under the certificate {isin} based on {content}, may you infer additional stock information like sector, industry, specializations (e.g., AI, Quantum, Defense Drone, Defense communication, Satellite, Crypto, etc.), P/E ratio, beta, and volatility? please do not consider other information such as certificate nor issuer details!"
         ),
         "details-only" => format!(
-            "what is the information about the certificate {isin} based on {content}? Please do not consider underlying stocks information nor issuer details!"
+            "The response should be in {language}: what is the information about the certificate {isin} based on {content}? Please consider that: 1. add the underlying stock tickers to the certificate name, 2. do not consider underlying stocks information nor issuer details!"
         ),
         "issuer-only" => format!(
-            "what is the information about the issuer of the certificate {isin} based on {content}? Please do not consider underlying stocks information nor certificate details!"
+            "The response should be in {language}: what is the information about the issuer of the certificate {isin} based on {content}? Please do not consider underlying stocks information nor certificate details!"
         ),
         _ => format!(
-            "what is the information about the certificate {isin} based on {content}? Please add underlying stocks information as well!"
+            "The response should be in {language}: what is the information about the certificate {isin} based on {content}? Please add underlying stocks information as well!"
         ),
     };
 
