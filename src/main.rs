@@ -129,7 +129,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let language = &args.language;
     let prompt = match args.resp_type.as_str() {
         "tickers-only" => format!(
-            "The response should be in {language}: what are the underlying stocks under the certificate {isin} based on {content}, may you infer additional stock information like sector, industry, specializations (e.g., AI, Quantum, Defense Drone, Defense communication, Satellite, Crypto, etc.), P/E ratio, beta, and volatility? please do not consider other information such as certificate nor issuer details!"
+            "The response should be in {language}: what are the underlying stocks under the certificate {isin} based on {content}, may you infer additional stock information like sector, industry, specializations (e.g., AI, Quantum, Defense Drone, Defense communication, Satellite, Crypto, etc.), P/E ratio, beta, and volatility? Please do not add other information such as certificate details nor issuer details!"
         ),
         "details-only" => format!(
             "The response should be in {language}: what is the information about the certificate {isin} based on {content}? Please consider that: 1. add the underlying stock tickers to the certificate name, 2. do not consider underlying stocks information nor issuer details!"
