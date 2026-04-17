@@ -127,13 +127,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let model_position = args.model_pos;
     let isin = &args.isin.to_ascii_uppercase();
     let prompt = match args.resp_type.as_str() {
-        "tickers" => format!(
+        "tickers-only" => format!(
             "what are the underlying stocks under the certificate {isin} based on {content}? please do not consider other information such as certificate details!"
         ),
-        "certificate" => format!(
-            "what is the information about the certificate {isin} based on {content}? Please do not consider underlying stocks information!"
+        "details-only" => format!(
+            "what is the information about the certificate {isin} based on {content}? Please do not consider underlying stocks information nor issuer details!"
         ),
-        "issuer" => format!(
+        "issuer-only" => format!(
             "what is the information about the issuer of the certificate {isin} based on {content}? Please do not consider underlying stocks information nor certificate details!"
         ),
         _ => format!(

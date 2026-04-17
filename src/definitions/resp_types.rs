@@ -27,6 +27,7 @@ pub struct CertificateDetails {
     issuer: String,
     name: String,
     type_tags: String,
+    phase: String, // rembursed, active, etc.
     sector: String,
     industry: String,   
     stock_exchange: String,
