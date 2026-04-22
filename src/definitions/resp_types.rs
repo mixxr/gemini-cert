@@ -4,6 +4,7 @@ use serde::*;
 #[derive(Serialize, Deserialize, AsSchema, Debug)]
 pub struct StockInfo {
     certificate_isin: String,
+    certificate_name: String,
     stock_name: String,
     stock_google_finance_ticker: String,
     stock_isin: String,
