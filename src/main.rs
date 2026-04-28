@@ -166,7 +166,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let full_path = std::path::Path::new(output_dir).join(file_name);
 
         // Serialize and write
-        let json_string = serde_json::to_string_pretty(details)?;
+        let json_string = serde_json::to_string(details)?;
         std::fs::write(&full_path, &json_string)?;
         log::debug!("Details information saved to: {:?}", full_path);
     }
@@ -175,23 +175,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let full_path = std::path::Path::new(output_dir).join(file_name);
 
         // Serialize and write
-        let json_string = serde_json::to_string_pretty(issuer)?;
+        let json_string = serde_json::to_string(issuer)?;
         std::fs::write(&full_path, &json_string)?;
         log::debug!("Issuer information saved to: {:?}", full_path);
     }
 
     // create a ndjson file to store underlyings if required
-    if let Some(stocks) = &response.underlyings && args.output_format == "ndjson" {
+    if let Some(underlyings) = &response.underlyings && args.output_format == "ndjson" {
         let ndj_file_name = format!("{}-tickers.json", isin);
         let ndj_full_path = std::path::Path::new(output_dir).join(ndj_file_name);
         let mut file = File::create(&ndj_full_path)?;   
-            for stock in stocks {
-                log::debug!("Writing json to {:?}...", &ndj_full_path);
-                // ndJSON is 1 file containing multiple JSON objects, each in a new line
-                serde_json::to_writer(&mut file, &stock).unwrap();
-                // add a new line after each JSON object
-                file.write_all(b"\n").unwrap();
-            }
+        for stock in underlyings {
+            log::debug!("Writing json to {:?}...", &ndj_full_path);
+            // ndJSON is 1 file containing multiple JSON objects, each in a new line
+            serde_json::to_writer(&mut file, &stock).unwrap();
+            // add a new line after each JSON object
+            file.write_all(b"\n").unwrap();
+        }
     }
     log::info!("{}, OK", isin);
 
