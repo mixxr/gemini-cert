@@ -48,6 +48,7 @@ pub struct CertificateDetails {
     coupon_recurrence: String,
     coupon_type: String, // fixed, variable, etc.
     coupon_barrier: String, // e.g. 100% of the strike price, 50% of the underlying stock price, etc.
+    coupon_next_ex_date: String, // format YYYY-MM-DD. It is the next date when the coupon will be paid from current date.
     leverage: String,
     exchange_risk: String,
 }
