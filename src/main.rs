@@ -190,6 +190,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             file.write_all(b"\n").unwrap();
         }
     }
+    if let Some(ex_dates) = &response.ex_dates && args.output_format == "ndjson" {
+        let ndj_file_name = format!("{}-ex-dates.json", isin);
+        let ndj_full_path = std::path::Path::new(output_dir).join(ndj_file_name);
+        let mut file = File::create(&ndj_full_path)?;   
+        for ex_date in ex_dates {
+            log::debug!("Writing json to {:?}...", &ndj_full_path);
+            // ndJSON is 1 file containing multiple JSON objects, each in a new line
+            serde_json::to_writer(&mut file, &ex_date).unwrap();
+            // add a new line after each JSON object
+            file.write_all(b"\n").unwrap();
+        }
+    }
     log::info!("{}, OK", isin);
 
     if args.wait {

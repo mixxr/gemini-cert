@@ -19,9 +19,17 @@ pub struct StockInfo {
 }
 
 #[derive(Serialize, Deserialize, AsSchema, Debug)]
+pub struct ExDateInfo {
+    certificate_isin: String,
+    certificate_name: String,
+    coupon_ex_date: String, // format YYYY-MM-DD. It is the list of the next coupon ex-dates (typically it is in the section "Data di Osservazione" or "Data di Pagamento" of the certificate's datasheet)
+}
+
+#[derive(Serialize, Deserialize, AsSchema, Debug)]
 pub struct CertificateTickersResponse {
     certificate_isin: String,
     pub details: Option<CertificateDetails>,
+    pub ex_dates: Option<Vec<ExDateInfo>>, 
     pub underlyings: Option<Vec<StockInfo>>,
     pub issuer: Option<IssuerInfo>,
 }
@@ -45,10 +53,9 @@ pub struct CertificateDetails {
     airbag: String, // yes, no, etc.
     risk_level: String, // low, medium, high, etc.
     coupon_amount: String,
-    coupon_recurrence: String,
+    coupon_recurrences: String,
     coupon_type: String, // fixed, variable, etc.
     coupon_barrier: String, // e.g. 100% of the strike price, 50% of the underlying stock price, etc.
-    coupon_next_ex_date: String, // format YYYY-MM-DD. It is the next date when the coupon will be paid from current date.
     leverage: String,
     exchange_risk: String,
 }
