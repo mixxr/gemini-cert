@@ -11,7 +11,7 @@ pub struct Args {
     #[arg(short = 'g', long, default_value = "English", value_parser = ["English", "Italian", "German", "French", "Spanish"])]
     pub language: String,
 
-    /// Response type [details-only|tickers-only|issuer-only|all] 
+    /// Response type 
     #[arg(short = 't', long, default_value = "details-only", value_parser = ["details-only", "tickers-only", "issuer-only", "all"])]
     pub resp_type: String,
 
@@ -27,7 +27,7 @@ pub struct Args {
     #[arg(short = 'o', long, default_value = "./")]
     pub output_dir: String,
 
-        /// Gemini retries
+    /// Gemini retries
     #[arg(short = 'r', long, default_value_t = 3)]
     pub retries: usize,
 
@@ -43,7 +43,7 @@ pub struct Args {
     #[arg(short = 'l', long)]
     pub model_list_path: Option<String>,
 
-            /// Gemini model list start position
+    /// Gemini model list start position
     #[arg(short = 'p', long, default_value_t = 0)]
     pub model_pos: usize,
 

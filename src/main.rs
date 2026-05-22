@@ -129,7 +129,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let language = &args.language;
     let prompt = match args.resp_type.as_str() {
         "details-only" => format!(
-            "The response should be in {language}: what is the information about the certificate {isin} based on {content}? Please consider that: 1. add the underlying stock tickers to the certificate name, 2. Please add underlying stocks information and all details about the certificate."
+            "The response should be in {language}: what is the information about the certificate {isin} based on {content}? Please consider that: 1. add the underlying stock tickers to the certificate name, 2. Please add underlying stocks information and all details about the certificate. 3. add info about the coupon ex-dates. 4. Do not add info about the issuer."
         ),
         "issuer-only" => format!(
             "The response should be in {language}: what is the information about the issuer of the certificate {isin} based on {content}? Please fullfil the 'IssuerInfo' structure and do not add underlying stocks information neither the certificate details!"
