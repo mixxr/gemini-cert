@@ -22,7 +22,7 @@ pub struct StockInfo {
 pub struct ExDateInfo {
     certificate_isin: String,
     certificate_name: String,
-    coupon_ex_date: String, // format YYYY-MM-DD. It is the list of the next coupon ex-dates (typically it is in the section "Data di Osservazione" or "Data di Pagamento" of the certificate's datasheet)
+    coupon_ex_date: String, // format YYYY-MM-DD. It is the list of the coupon ex-dates (typically it is in the section "Data di Osservazione" or "Data di Pagamento" of the certificate's datasheet)
 }
 
 #[derive(Serialize, Deserialize, AsSchema, Debug)]
