@@ -32,6 +32,7 @@ pub struct CertificateTickersResponse {
     pub ex_dates: Option<Vec<ExDateInfo>>, 
     pub underlyings: Option<Vec<StockInfo>>,
     pub issuer: Option<IssuerInfo>,
+    // pub quote: Option<QuoteInfo>,
 }
 
 #[derive(Serialize, Deserialize, AsSchema, Debug)]
@@ -68,3 +69,12 @@ pub struct IssuerInfo {
     issuer_rating_description: String, // e.g. S&P's: A (04/07/2018)
     issuer_rating_class: String, // e.g. AA, BBB, etc.
 }
+
+// #[derive(Serialize, Deserialize, AsSchema, Debug)]
+// pub struct QuoteInfo {
+//     certificate_isin: String,
+//     certificate_issuer: String,
+//     ask: String, // certificate ask price. IF multiple use the last one
+//     bid: String, // certificate bid price. IF multiple use the last one
+//     dt: String, // observation datetime in format YYYY-MM-DDTHH-MM-SS
+// }

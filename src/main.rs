@@ -128,6 +128,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let isin = &args.isin.to_ascii_uppercase();
     let language = &args.language;
     let prompt = match args.resp_type.as_str() {
+        // "quotes-only" => format!(
+        //     "The response should be in {language}: may you provide ask and bid prices based on {content}? Please add the certificate ISIN and issuer name if you know otherwise use 'N/A'. Do not fill other Options like details, underlyings and issuer information!"
+        // ),
         "details-only" => format!(
             "The response should be in {language}: what is the information about the certificate {isin} based on {content}? Please consider that: 1. add the underlying stock tickers to the certificate name, 2. Please add underlying stocks information and all details about the certificate. 3. add info about the coupon ex-dates. 4. Do not add info about the issuer."
         ),
@@ -202,6 +205,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             file.write_all(b"\n").unwrap();
         }
     }
+    // if let Some(quote) = &response.quote {
+    //     let file_name = format!("{}-quotes.json", isin);
+    //     let full_path = std::path::Path::new(output_dir).join(file_name);
+
+    //     // Serialize and write
+    //     let json_string = serde_json::to_string(quote)?;
+    //     std::fs::write(&full_path, &json_string)?;
+    //     log::debug!("Quote information saved to: {:?}", full_path);
+    // }
     log::info!("{}, OK", isin);
 
     if args.wait {
