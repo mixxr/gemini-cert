@@ -54,7 +54,7 @@ pub struct CertificateDetails {
     airbag: String, // yes, no, etc.
     risk_level: String, // low, medium, high, etc.
     coupon_amount: String,
-    coupon_recurrences: String,
+    coupon_recurrence: String, // Monthly, Annual, Quarterly. If not specified, use 'N/A'
     coupon_type: String, // fixed, variable, etc.
     coupon_barrier: String, // e.g. 100% of the strike price, 50% of the underlying stock price, etc.
     leverage: String,
