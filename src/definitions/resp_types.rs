@@ -68,6 +68,7 @@ pub struct IssuerInfo {
     geo_region: String,   
     issuer_rating_description: String, // e.g. S&P's: A (04/07/2018)
     issuer_rating_class: String, // e.g. AA, BBB, etc.
+    website: String, // should be https://...
 }
 
 // #[derive(Serialize, Deserialize, AsSchema, Debug)]
