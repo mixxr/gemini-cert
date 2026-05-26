@@ -46,9 +46,9 @@ pub struct CertificateDetails {
     currency: String,
     industry: String,  // try to infer the industry of the certificate based on the underlying stocks' industries
     callable: String, // yes, no, autocallable,
-    strike_date: String, // format YYYY-MM-DD
-    issue_date: String, // format YYYY-MM-DD
-    rembursement_date: String, // format YYYY-MM-DD
+    strike_date: String, // format YYYY-MM-DD .If not specified, use 'N/A'
+    issue_date: String, // format YYYY-MM-DD .If not specified, use 'N/A'
+    rembursement_date: String, // format YYYY-MM-DD  .If not specified, use 'N/A'
     autocallable_date: String, // format YYYY-MM-DD
     capital_barrier: String, // e.g. 100% of the strike price, 50% of the underlying stock price, etc.
     airbag: String, // yes, no, etc.
