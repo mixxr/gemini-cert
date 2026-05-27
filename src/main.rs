@@ -132,7 +132,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         //     "The response should be in {language}: may you provide ask and bid prices based on {content}? Please add the certificate ISIN and issuer name if you know otherwise use 'N/A'. Do not fill other Options like details, underlyings and issuer information!"
         // ),
         "details-only" => format!(
-            "The response should be in {language}: what is the information about the certificate {isin} based on {content}? Please consider that: 1. add the underlying stock tickers to the certificate name, 2. Please add underlying stocks information and all details about the certificate. 3. add info about the coupon ex-dates. 4. Do not add info about the issuer."
+            "The response should be in {language}: what is the information about the certificate {isin} based on {content}? Please consider that: 1. add the underlying stock tickers to the certificate name, 2. Please add underlying stocks information and all details about the certificate. 3. add info about the coupon ex-dates in format YYYY-MM-DD. 4. Do not add info about the issuer."
         ),
         "issuer-only" => format!(
             "The response should be in {language}: what is the information about the issuer of the certificate {isin} based on {content}? Please fullfil the 'IssuerInfo' structure and do not add underlying stocks information neither the certificate details!"
@@ -194,15 +194,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     if let Some(ex_dates) = &response.ex_dates && args.output_format == "ndjson" {
-        let ndj_file_name = format!("{}-ex-dates.json", isin);
+        let ndj_file_name = format!("{}-ex_dates.json", isin);
         let ndj_full_path = std::path::Path::new(output_dir).join(ndj_file_name);
         let mut file = File::create(&ndj_full_path)?;   
         for ex_date in ex_dates {
+            if !ex_date.coupon_ex_date.to_lowercase().contains("not ") && !ex_date.coupon_ex_date.to_lowercase().contains("observation"){
             log::debug!("Writing json to {:?}...", &ndj_full_path);
             // ndJSON is 1 file containing multiple JSON objects, each in a new line
             serde_json::to_writer(&mut file, &ex_date).unwrap();
             // add a new line after each JSON object
             file.write_all(b"\n").unwrap();
+            }else{
+                log::warn!("NOT writing json to {:?} because ex_date was not provided: {:?}", &ndj_full_path, &ex_date.coupon_ex_date);
+            }
         }
     }
     // if let Some(quote) = &response.quote {
